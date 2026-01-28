@@ -1,5 +1,5 @@
 #include "functions.h"
-
+#include <chrono>
 using namespace std;
 
 class OrderBookEntry {
@@ -166,7 +166,7 @@ int64_t totalAmountTraded(const std::vector<uint64_t> &orderBook)
     int n = orderBook.size();
     int64_t totalAmout = 0;
 
-    #pragma omp parallel for reduction(+:totalAmout)
+    #pragma omp parallel for reduction(+:totalAmout) schedule(static)
     for(int i=0;i<n;i++) {
         OrderBookEntry entry = decodePacket(orderBook[i]);
         int64_t tradeAmount = (int64_t)entry.orderQty * (int64_t)entry.orderValue;
@@ -192,27 +192,60 @@ void printOrderStats(const std::vector<uint64_t> &orderBook)
         StockStats() : stockID(0), minSellValue(255), maxBuyValue(0), totalValue(0), orderCount(0), hasSell(false), hasBuy(false) {}
     };
 
+    int num_threads = omp_get_max_threads();
+    vector<map<uint32_t, StockStats>> thread_local_data(num_threads);
+
+    #pragma omp parallel
+    {
+        int thread_id = omp_get_thread_num();
+        map<uint32_t, StockStats>& localData = thread_local_data[thread_id];
+
+        #pragma omp for schedule(static)
+        for(int i=0;i<n;i++) {
+            OrderBookEntry entry = decodePacket(orderBook[i]);
+            if(localData.find(entry.stockID) == localData.end()) {
+                localData[entry.stockID] = StockStats();
+                localData[entry.stockID].stockID = entry.stockID;
+            }
+    
+            //sell
+            if(entry.orderType) {
+                localData[entry.stockID].hasSell = true;
+                localData[entry.stockID].minSellValue = min(entry.orderValue, localData[entry.stockID].minSellValue);
+            }
+            else { // Buy
+                localData[entry.stockID].hasBuy = true;
+                localData[entry.stockID].maxBuyValue = max(entry.orderValue, localData[entry.stockID].maxBuyValue);
+            }
+    
+            localData[entry.stockID].totalValue += entry.orderValue;
+            localData[entry.stockID].orderCount++;
+        }
+    }
+
+    // merge thread results
     map<uint32_t, StockStats> statsData;
-
-    for(int i=0;i<n;i++) {
-        OrderBookEntry entry = decodePacket(orderBook[i]);
-        if(statsData.find(entry.stockID) == statsData.end()) {
-            statsData[entry.stockID] = StockStats();
-            statsData[entry.stockID].stockID = entry.stockID;
+    for(auto& local_data : thread_local_data) {
+        for(auto& [stockID, local_stats] : local_data) {
+            if(statsData.find(stockID) == statsData.end()) {
+                statsData[stockID] = local_stats;
+            } else {
+                StockStats& global_stats = statsData[stockID];
+                
+                if(local_stats.hasSell) {
+                    global_stats.hasSell = true;
+                    global_stats.minSellValue = min(global_stats.minSellValue, local_stats.minSellValue);
+                }
+                
+                if(local_stats.hasBuy) {
+                    global_stats.hasBuy = true;
+                    global_stats.maxBuyValue = max(global_stats.maxBuyValue, local_stats.maxBuyValue);
+                }
+                
+                global_stats.totalValue += local_stats.totalValue;
+                global_stats.orderCount += local_stats.orderCount;
+            }
         }
-
-        //sell
-        if(entry.orderType) {
-            statsData[entry.stockID].hasSell = true;
-            statsData[entry.stockID].minSellValue = min(entry.orderValue, statsData[entry.stockID].minSellValue);
-        }
-        else { // Buy
-            statsData[entry.stockID].hasBuy = true;
-            statsData[entry.stockID].maxBuyValue = max(entry.orderValue, statsData[entry.stockID].maxBuyValue);
-        }
-
-        statsData[entry.stockID].totalValue += entry.orderValue;
-        statsData[entry.stockID].orderCount++;
     }
 
     vector<StockStats> statsList;
