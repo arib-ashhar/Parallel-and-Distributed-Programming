@@ -6,11 +6,11 @@ Benchmark Results
 
 Tests conducted on **Apple M4, 10 cores** with varying workload sizes:
 
-| Function | 10K Orders | 100K Orders | 1M Orders | Speedup @ 8 threads |
-|----------|-----------|-------------|-----------|---------------------|
-| **totalAmountTraded()** | - | - | - | **5.61x** |
-| **printOrderStats()** | - | - | - | **5.11x** |
-| **updateDisplay()** | - | - | - | **0.99x** |
+| Function | Speedup @ 8 threads |
+|----------|---------------------|
+| **totalAmountTraded()** | **5.61x** |
+| **printOrderStats()** | **5.11x** |
+| **updateDisplay()** | **0.99x** |
 
 ![Benchmark Results](./A1/tester/benchmark_results.png)
 
