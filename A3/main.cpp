@@ -16,7 +16,7 @@ public:
     int WordCount;
     vector<int> Profit;
     vector<int> Cost;
-    vector<vector<unsigned long long> > AdjacencyBits;
+    vector<unsigned long long> AdjacencyBits;
 
     Graph(int vertexCount, int edgeCount, int budget) {
         VertexCount = vertexCount;
@@ -25,7 +25,7 @@ public:
         WordCount = (VertexCount + 63) >> 6;
         Profit.assign(VertexCount, 0);
         Cost.assign(VertexCount, 0);
-        AdjacencyBits.assign(VertexCount, vector<unsigned long long>(WordCount, 0ULL));
+        AdjacencyBits.assign(VertexCount * WordCount, 0ULL);
     }
 
     // Stores vertex attributes.
@@ -36,13 +36,18 @@ public:
 
     // Adds an undirected edge.
     void AddEdge(int leftVertex, int rightVertex) {
-        AdjacencyBits[leftVertex][rightVertex >> 6] |= (1ULL << (rightVertex & 63));
-        AdjacencyBits[rightVertex][leftVertex >> 6] |= (1ULL << (leftVertex & 63));
+        AdjacencyBits[leftVertex * WordCount + (rightVertex >> 6)] |= (1ULL << (rightVertex & 63));
+        AdjacencyBits[rightVertex * WordCount + (leftVertex >> 6)] |= (1ULL << (leftVertex & 63));
     }
 
     // Checks graph adjacency.
     bool IsAdjacent(int leftVertex, int rightVertex) const {
-        return (AdjacencyBits[leftVertex][rightVertex >> 6] & (1ULL << (rightVertex & 63))) != 0ULL;
+        return (AdjacencyBits[leftVertex * WordCount + (rightVertex >> 6)] & (1ULL << (rightVertex & 63))) != 0ULL;
+    }
+
+    // Returns the start of a vertex adjacency row.
+    const unsigned long long* GetAdjacencyRow(int vertex) const {
+        return &AdjacencyBits[vertex * WordCount];
     }
 };
 
@@ -90,35 +95,33 @@ public:
     }
 };
 
-class ColorClass {
-public:
-    vector<unsigned long long> MemberBits;
-    int MaxProfit;
-
-    ColorClass() : MaxProfit(0) {
-    }
-
-    explicit ColorClass(int wordCount) : MemberBits(wordCount, 0ULL), MaxProfit(0) {
-    }
-
-    // Clears the class for reuse.
-    void Reset() {
-        fill(MemberBits.begin(), MemberBits.end(), 0ULL);
-        MaxProfit = 0;
-    }
-};
-
 class SearchFrame {
 public:
     vector<int> Candidates;
-    vector<ColorClass> ColorClasses;
+    vector<int> OrderedCandidates;
+    vector<unsigned long long> ColorClassBits;
+    vector<int> ColorClassMaxProfit;
+    vector<int> ProfitCounts;
+    vector<int> ProfitOffsets;
+    int WordCount;
 
     SearchFrame() {
+        WordCount = 0;
     }
 
     SearchFrame(int vertexCount, int wordCount) {
         Candidates.reserve(vertexCount);
-        ColorClasses.assign(vertexCount, ColorClass(wordCount));
+        OrderedCandidates.reserve(vertexCount);
+        ColorClassBits.assign(vertexCount * wordCount, 0ULL);
+        ColorClassMaxProfit.assign(vertexCount, 0);
+        ProfitCounts.assign(101, 0);
+        ProfitOffsets.assign(101, 0);
+        WordCount = wordCount;
+    }
+
+    // Returns the bitset backing a color class.
+    unsigned long long* GetColorClassBits(int classIndex) {
+        return &ColorClassBits[classIndex * WordCount];
     }
 };
 
@@ -131,6 +134,7 @@ public:
     vector<int> BestClique;
     vector<int> CurrentClique;
     vector<int> VertexOrder;
+    vector<int> ProfitOrder;
     vector<SearchFrame> Frames;
 
     BranchAndBoundSolver(const Graph* graphPtr, int rankValue, int sizeValue) {
@@ -140,10 +144,14 @@ public:
         BestProfit = 0;
 
         VertexOrder.resize(GraphPtr->VertexCount);
+        ProfitOrder.resize(GraphPtr->VertexCount);
         iota(VertexOrder.begin(), VertexOrder.end(), 0);
+        iota(ProfitOrder.begin(), ProfitOrder.end(), 0);
 
         EfficiencyComparator efficiencyComparator(GraphPtr);
+        ProfitComparator profitComparator(GraphPtr);
         sort(VertexOrder.begin(), VertexOrder.end(), efficiencyComparator);
+        sort(ProfitOrder.begin(), ProfitOrder.end(), profitComparator);
 
         Frames.assign(GraphPtr->VertexCount + 1, SearchFrame(GraphPtr->VertexCount, GraphPtr->WordCount));
         CurrentClique.reserve(GraphPtr->VertexCount);
@@ -165,22 +173,47 @@ public:
         int colorCount = 0;
         int boundValue = 0;
 
-        for (int vertex : candidates) {
+        int candidateCount = static_cast<int>(candidates.size());
+        frame.OrderedCandidates.resize(candidateCount);
+        fill(frame.ProfitCounts.begin(), frame.ProfitCounts.end(), 0);
+
+        for (int index = 0; index < candidateCount; index++) {
+            int profitValue = GraphPtr->Profit[candidates[index]];
+            frame.ProfitCounts[profitValue]++;
+        }
+
+        int currentOffset = 0;
+        for (int profitValue = 100; profitValue >= 1; profitValue--) {
+            frame.ProfitOffsets[profitValue] = currentOffset;
+            currentOffset += frame.ProfitCounts[profitValue];
+        }
+
+        for (int index = 0; index < candidateCount; index++) {
+            int vertex = candidates[index];
+            int profitValue = GraphPtr->Profit[vertex];
+            int writeIndex = frame.ProfitOffsets[profitValue];
+            frame.OrderedCandidates[writeIndex] = vertex;
+            frame.ProfitOffsets[profitValue]++;
+        }
+
+        for (int orderedIndex = 0; orderedIndex < candidateCount; orderedIndex++) {
+            int vertex = frame.OrderedCandidates[orderedIndex];
             int classIndex = 0;
-            while (classIndex < colorCount && IntersectsClass(frame.ColorClasses[classIndex], vertex)) {
+            while (classIndex < colorCount && IntersectsClass(frame.GetColorClassBits(classIndex), vertex)) {
                 classIndex++;
             }
 
             if (classIndex == colorCount) {
-                frame.ColorClasses[colorCount].Reset();
+                ResetColorClass(frame.GetColorClassBits(colorCount), frame.WordCount);
+                frame.ColorClassMaxProfit[colorCount] = 0;
                 colorCount++;
             }
 
-            AddVertexToClass(frame.ColorClasses[classIndex], vertex);
+            AddVertexToClass(frame.GetColorClassBits(classIndex), frame.ColorClassMaxProfit[classIndex], vertex);
         }
 
         for (int index = 0; index < colorCount; index++) {
-            boundValue += frame.ColorClasses[index].MaxProfit;
+            boundValue += frame.ColorClassMaxProfit[index];
         }
 
         return boundValue;
@@ -295,21 +328,15 @@ public:
         long long taskId = 0;
 
         for (int index = 0; index < static_cast<int>(rootCandidates.size()); index++) {
-            if ((taskId % Size) != Rank) {
-                taskId++;
-                continue;
-            }
-
             int rootVertex = rootCandidates[index];
             int rootCost = GraphPtr->Cost[rootVertex];
             int rootProfit = GraphPtr->Profit[rootVertex];
+            if (rootCost > GraphPtr->Budget) {
+                continue;
+            }
 
-            CurrentClique.clear();
-            CurrentClique.push_back(rootVertex);
-            UpdateBestSolution(rootProfit);
-
-            SearchFrame& nextFrame = Frames[1];
-            nextFrame.Candidates.clear();
+            vector<int> levelOneCandidates;
+            levelOneCandidates.reserve(rootCandidates.size());
             int remainingBudget = GraphPtr->Budget - rootCost;
 
             for (int nextIndex = index + 1; nextIndex < static_cast<int>(rootCandidates.size()); nextIndex++) {
@@ -318,15 +345,52 @@ public:
                     continue;
                 }
                 if (GraphPtr->IsAdjacent(rootVertex, nextVertex)) {
-                    nextFrame.Candidates.push_back(nextVertex);
+                    levelOneCandidates.push_back(nextVertex);
                 }
             }
 
-            if (!nextFrame.Candidates.empty()) {
-                Search(1, rootProfit, rootCost);
-            }
+            CurrentClique.clear();
+            CurrentClique.push_back(rootVertex);
+            UpdateBestSolution(rootProfit);
 
-            taskId++;
+            for (int secondIndex = 0; secondIndex < static_cast<int>(levelOneCandidates.size()); secondIndex++) {
+                long long currentTaskId = taskId;
+                taskId++;
+
+                if ((currentTaskId % Size) != Rank) {
+                    continue;
+                }
+
+                int secondVertex = levelOneCandidates[secondIndex];
+                int secondCost = rootCost + GraphPtr->Cost[secondVertex];
+                if (secondCost > GraphPtr->Budget) {
+                    continue;
+                }
+
+                int secondProfit = rootProfit + GraphPtr->Profit[secondVertex];
+                CurrentClique.clear();
+                CurrentClique.push_back(rootVertex);
+                CurrentClique.push_back(secondVertex);
+                UpdateBestSolution(secondProfit);
+
+                SearchFrame& nextFrame = Frames[2];
+                nextFrame.Candidates.clear();
+                int nextBudget = GraphPtr->Budget - secondCost;
+
+                for (int nextIndex = secondIndex + 1; nextIndex < static_cast<int>(levelOneCandidates.size()); nextIndex++) {
+                    int nextVertex = levelOneCandidates[nextIndex];
+                    if (GraphPtr->Cost[nextVertex] > nextBudget) {
+                        continue;
+                    }
+                    if (GraphPtr->IsAdjacent(secondVertex, nextVertex)) {
+                        nextFrame.Candidates.push_back(nextVertex);
+                    }
+                }
+
+                if (!nextFrame.Candidates.empty()) {
+                    Search(2, secondProfit, secondCost);
+                }
+            }
         }
     }
 
@@ -342,13 +406,19 @@ public:
 private:
     // Seeds a feasible incumbent before the search starts.
     void InitializeGreedySolution() {
+        TryGreedyOrder(VertexOrder);
+        TryGreedyOrder(ProfitOrder);
+    }
+
+    // Builds a greedy clique using a fixed vertex order.
+    void TryGreedyOrder(const vector<int>& order) {
         vector<int> greedyClique;
         greedyClique.reserve(GraphPtr->VertexCount);
 
         int totalProfit = 0;
         int totalCost = 0;
 
-        for (int vertex : VertexOrder) {
+        for (int vertex : order) {
             int newCost = totalCost + GraphPtr->Cost[vertex];
             if (newCost > GraphPtr->Budget) {
                 continue;
@@ -363,8 +433,10 @@ private:
             totalProfit += GraphPtr->Profit[vertex];
         }
 
-        BestProfit = totalProfit;
-        BestClique = greedyClique;
+        if (totalProfit > BestProfit) {
+            BestProfit = totalProfit;
+            BestClique = greedyClique;
+        }
     }
 
     // Checks whether a vertex can join the current clique.
@@ -378,21 +450,28 @@ private:
     }
 
     // Checks whether a vertex conflicts with a color class.
-    bool IntersectsClass(const ColorClass& colorClass, int vertex) const {
-        const vector<unsigned long long>& adjacencyBits = GraphPtr->AdjacencyBits[vertex];
+    bool IntersectsClass(const unsigned long long* colorClassBits, int vertex) const {
+        const unsigned long long* adjacencyBits = GraphPtr->GetAdjacencyRow(vertex);
         for (int wordIndex = 0; wordIndex < GraphPtr->WordCount; wordIndex++) {
-            if ((colorClass.MemberBits[wordIndex] & adjacencyBits[wordIndex]) != 0ULL) {
+            if ((colorClassBits[wordIndex] & adjacencyBits[wordIndex]) != 0ULL) {
                 return true;
             }
         }
         return false;
     }
 
+    // Clears a color class bitset.
+    void ResetColorClass(unsigned long long* colorClassBits, int wordCount) const {
+        for (int wordIndex = 0; wordIndex < wordCount; wordIndex++) {
+            colorClassBits[wordIndex] = 0ULL;
+        }
+    }
+
     // Inserts a vertex into a color class.
-    void AddVertexToClass(ColorClass& colorClass, int vertex) const {
-        colorClass.MemberBits[vertex >> 6] |= (1ULL << (vertex & 63));
-        if (GraphPtr->Profit[vertex] > colorClass.MaxProfit) {
-            colorClass.MaxProfit = GraphPtr->Profit[vertex];
+    void AddVertexToClass(unsigned long long* colorClassBits, int& colorClassMaxProfit, int vertex) const {
+        colorClassBits[vertex >> 6] |= (1ULL << (vertex & 63));
+        if (GraphPtr->Profit[vertex] > colorClassMaxProfit) {
+            colorClassMaxProfit = GraphPtr->Profit[vertex];
         }
     }
 };
