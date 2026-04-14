@@ -203,6 +203,7 @@ public:
     int ComputeColorBound(const vector<int>& candidates, SearchFrame& frame) {
         int colorCount = 0;
         int boundValue = 0;
+        int wordCount = frame.WordCount;
 
         int candidateCount = static_cast<int>(candidates.size());
         frame.OrderedCandidates.resize(candidateCount);
@@ -230,12 +231,12 @@ public:
         for (int orderedIndex = 0; orderedIndex < candidateCount; orderedIndex++) {
             int vertex = frame.OrderedCandidates[orderedIndex];
             int classIndex = 0;
-            while (classIndex < colorCount && IntersectsClass(frame.GetColorClassBits(classIndex), vertex)) {
+            while (classIndex < colorCount && IntersectsClass(frame.GetColorClassBits(classIndex), vertex, wordCount)) {
                 classIndex++;
             }
 
             if (classIndex == colorCount) {
-                ResetColorClass(frame.GetColorClassBits(colorCount), frame.WordCount);
+                ResetColorClass(frame.GetColorClassBits(colorCount), wordCount);
                 frame.ColorClassMaxProfit[colorCount] = 0;
                 colorCount++;
             }
@@ -427,11 +428,7 @@ public:
 
     // Starts the solver.
     void Solve() {
-        if (Size == 1) {
-            SolveSingleRank();
-        } else {
-            SolveMultiRank();
-        }
+        SolveMultiRank();
     }
 
 private:
@@ -585,20 +582,108 @@ private:
     }
 
     // Checks whether a vertex conflicts with a color class.
-    bool IntersectsClass(const unsigned long long* colorClassBits, int vertex) const {
+    bool IntersectsClass(const unsigned long long* colorClassBits, int vertex, int wordCount) const {
         const unsigned long long* adjacencyBits = GraphPtr->GetAdjacencyRow(vertex);
-        for (int wordIndex = 0; wordIndex < GraphPtr->WordCount; wordIndex++) {
-            if ((colorClassBits[wordIndex] & adjacencyBits[wordIndex]) != 0ULL) {
-                return true;
+
+        switch (wordCount) {
+        case 1:
+            return (colorClassBits[0] & adjacencyBits[0]) != 0ULL;
+        case 2:
+            return ((colorClassBits[0] & adjacencyBits[0]) | (colorClassBits[1] & adjacencyBits[1])) != 0ULL;
+        case 3:
+            return ((colorClassBits[0] & adjacencyBits[0]) | (colorClassBits[1] & adjacencyBits[1]) |
+                    (colorClassBits[2] & adjacencyBits[2])) != 0ULL;
+        case 4:
+            return ((colorClassBits[0] & adjacencyBits[0]) | (colorClassBits[1] & adjacencyBits[1]) |
+                    (colorClassBits[2] & adjacencyBits[2]) | (colorClassBits[3] & adjacencyBits[3])) != 0ULL;
+        case 5:
+            return ((colorClassBits[0] & adjacencyBits[0]) | (colorClassBits[1] & adjacencyBits[1]) |
+                    (colorClassBits[2] & adjacencyBits[2]) | (colorClassBits[3] & adjacencyBits[3]) |
+                    (colorClassBits[4] & adjacencyBits[4])) != 0ULL;
+        case 6:
+            return ((colorClassBits[0] & adjacencyBits[0]) | (colorClassBits[1] & adjacencyBits[1]) |
+                    (colorClassBits[2] & adjacencyBits[2]) | (colorClassBits[3] & adjacencyBits[3]) |
+                    (colorClassBits[4] & adjacencyBits[4]) | (colorClassBits[5] & adjacencyBits[5])) != 0ULL;
+        case 7:
+            return ((colorClassBits[0] & adjacencyBits[0]) | (colorClassBits[1] & adjacencyBits[1]) |
+                    (colorClassBits[2] & adjacencyBits[2]) | (colorClassBits[3] & adjacencyBits[3]) |
+                    (colorClassBits[4] & adjacencyBits[4]) | (colorClassBits[5] & adjacencyBits[5]) |
+                    (colorClassBits[6] & adjacencyBits[6])) != 0ULL;
+        case 8:
+            return ((colorClassBits[0] & adjacencyBits[0]) | (colorClassBits[1] & adjacencyBits[1]) |
+                    (colorClassBits[2] & adjacencyBits[2]) | (colorClassBits[3] & adjacencyBits[3]) |
+                    (colorClassBits[4] & adjacencyBits[4]) | (colorClassBits[5] & adjacencyBits[5]) |
+                    (colorClassBits[6] & adjacencyBits[6]) | (colorClassBits[7] & adjacencyBits[7])) != 0ULL;
+        default:
+            for (int wordIndex = 0; wordIndex < wordCount; wordIndex++) {
+                if ((colorClassBits[wordIndex] & adjacencyBits[wordIndex]) != 0ULL) {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
     }
 
     // Clears a color class bitset.
     void ResetColorClass(unsigned long long* colorClassBits, int wordCount) const {
-        for (int wordIndex = 0; wordIndex < wordCount; wordIndex++) {
-            colorClassBits[wordIndex] = 0ULL;
+        switch (wordCount) {
+        case 1:
+            colorClassBits[0] = 0ULL;
+            return;
+        case 2:
+            colorClassBits[0] = 0ULL;
+            colorClassBits[1] = 0ULL;
+            return;
+        case 3:
+            colorClassBits[0] = 0ULL;
+            colorClassBits[1] = 0ULL;
+            colorClassBits[2] = 0ULL;
+            return;
+        case 4:
+            colorClassBits[0] = 0ULL;
+            colorClassBits[1] = 0ULL;
+            colorClassBits[2] = 0ULL;
+            colorClassBits[3] = 0ULL;
+            return;
+        case 5:
+            colorClassBits[0] = 0ULL;
+            colorClassBits[1] = 0ULL;
+            colorClassBits[2] = 0ULL;
+            colorClassBits[3] = 0ULL;
+            colorClassBits[4] = 0ULL;
+            return;
+        case 6:
+            colorClassBits[0] = 0ULL;
+            colorClassBits[1] = 0ULL;
+            colorClassBits[2] = 0ULL;
+            colorClassBits[3] = 0ULL;
+            colorClassBits[4] = 0ULL;
+            colorClassBits[5] = 0ULL;
+            return;
+        case 7:
+            colorClassBits[0] = 0ULL;
+            colorClassBits[1] = 0ULL;
+            colorClassBits[2] = 0ULL;
+            colorClassBits[3] = 0ULL;
+            colorClassBits[4] = 0ULL;
+            colorClassBits[5] = 0ULL;
+            colorClassBits[6] = 0ULL;
+            return;
+        case 8:
+            colorClassBits[0] = 0ULL;
+            colorClassBits[1] = 0ULL;
+            colorClassBits[2] = 0ULL;
+            colorClassBits[3] = 0ULL;
+            colorClassBits[4] = 0ULL;
+            colorClassBits[5] = 0ULL;
+            colorClassBits[6] = 0ULL;
+            colorClassBits[7] = 0ULL;
+            return;
+        default:
+            for (int wordIndex = 0; wordIndex < wordCount; wordIndex++) {
+                colorClassBits[wordIndex] = 0ULL;
+            }
+            return;
         }
     }
 
