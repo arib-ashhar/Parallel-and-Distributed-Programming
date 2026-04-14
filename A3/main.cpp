@@ -1,9 +1,10 @@
-#include <iostream>
-#include <vector>
 #include <algorithm>
-#include <fstream>
 #include <chrono>
+#include <fstream>
+#include <iostream>
 #include <mpi.h>
+#include <numeric>
+#include <vector>
 
 using namespace std;
 
@@ -27,153 +28,166 @@ public:
         AdjacencyBits.assign(VertexCount, vector<unsigned long long>(WordCount, 0ULL));
     }
 
-    void AddVertex(int vertex, int profit, int cost) {
-        Profit[vertex] = profit;
-        Cost[vertex] = cost;
+    // Stores vertex attributes.
+    void AddVertex(int vertex, int profitValue, int costValue) {
+        Profit[vertex] = profitValue;
+        Cost[vertex] = costValue;
     }
 
-    void AddEdge(int left, int right) {
-        AdjacencyBits[left][right >> 6] |= (1ULL << (right & 63));
-        AdjacencyBits[right][left >> 6] |= (1ULL << (left & 63));
+    // Adds an undirected edge.
+    void AddEdge(int leftVertex, int rightVertex) {
+        AdjacencyBits[leftVertex][rightVertex >> 6] |= (1ULL << (rightVertex & 63));
+        AdjacencyBits[rightVertex][leftVertex >> 6] |= (1ULL << (leftVertex & 63));
     }
 
-    bool AreAdjacent(int left, int right) const {
-        return (AdjacencyBits[left][right >> 6] & (1ULL << (right & 63))) != 0ULL;
-    }
-};
-
-class ProfitComparator {
-public:
-    Graph* GraphPtr;
-
-    ProfitComparator(Graph* graphPtr) {
-        GraphPtr = graphPtr;
-    }
-
-    bool operator()(int left, int right) const {
-        if (GraphPtr->Profit[left] != GraphPtr->Profit[right]) {
-            return GraphPtr->Profit[left] > GraphPtr->Profit[right];
-        }
-        if (GraphPtr->Cost[left] != GraphPtr->Cost[right]) {
-            return GraphPtr->Cost[left] < GraphPtr->Cost[right];
-        }
-        return left < right;
+    // Checks graph adjacency.
+    bool IsAdjacent(int leftVertex, int rightVertex) const {
+        return (AdjacencyBits[leftVertex][rightVertex >> 6] & (1ULL << (rightVertex & 63))) != 0ULL;
     }
 };
 
 class EfficiencyComparator {
 public:
-    Graph* GraphPtr;
+    const Graph* GraphPtr;
 
-    EfficiencyComparator(Graph* graphPtr) {
+    explicit EfficiencyComparator(const Graph* graphPtr) {
         GraphPtr = graphPtr;
     }
 
-    bool operator()(int left, int right) const {
-        long long leftValue = 1LL * GraphPtr->Profit[left] * GraphPtr->Cost[right];
-        long long rightValue = 1LL * GraphPtr->Profit[right] * GraphPtr->Cost[left];
+    bool operator()(int leftVertex, int rightVertex) const {
+        long long leftValue = 1LL * GraphPtr->Profit[leftVertex] * GraphPtr->Cost[rightVertex];
+        long long rightValue = 1LL * GraphPtr->Profit[rightVertex] * GraphPtr->Cost[leftVertex];
 
         if (leftValue != rightValue) {
             return leftValue > rightValue;
         }
-        if (GraphPtr->Profit[left] != GraphPtr->Profit[right]) {
-            return GraphPtr->Profit[left] > GraphPtr->Profit[right];
+        if (GraphPtr->Profit[leftVertex] != GraphPtr->Profit[rightVertex]) {
+            return GraphPtr->Profit[leftVertex] > GraphPtr->Profit[rightVertex];
         }
-        if (GraphPtr->Cost[left] != GraphPtr->Cost[right]) {
-            return GraphPtr->Cost[left] < GraphPtr->Cost[right];
+        if (GraphPtr->Cost[leftVertex] != GraphPtr->Cost[rightVertex]) {
+            return GraphPtr->Cost[leftVertex] < GraphPtr->Cost[rightVertex];
         }
-        return left < right;
+        return leftVertex < rightVertex;
     }
 };
 
-class BitSetTools {
+class ProfitComparator {
 public:
-    static bool Contains(const vector<unsigned long long>& bitSet, int vertex) {
-        return (bitSet[vertex >> 6] & (1ULL << (vertex & 63))) != 0ULL;
-    }
+    const Graph* GraphPtr;
 
-    static void Add(vector<unsigned long long>& bitSet, int vertex) {
-        bitSet[vertex >> 6] |= (1ULL << (vertex & 63));
-    }
-
-    static bool IsEmpty(const vector<unsigned long long>& bitSet) {
-        for (int i = 0; i < (int)bitSet.size(); i++) {
-            if (bitSet[i] != 0ULL) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    static bool Intersects(const vector<unsigned long long>& firstBits, const vector<unsigned long long>& secondBits) {
-        for (int i = 0; i < (int)firstBits.size(); i++) {
-            if ((firstBits[i] & secondBits[i]) != 0ULL) {
-                return true;
-            }
-        }
-        return false;
-    }
-};
-
-class ColorBound {
-public:
-    Graph* GraphPtr;
-    vector<int>* ProfitOrderPtr;
-
-    ColorBound(Graph* graphPtr, vector<int>* profitOrderPtr) {
+    explicit ProfitComparator(const Graph* graphPtr) {
         GraphPtr = graphPtr;
-        ProfitOrderPtr = profitOrderPtr;
     }
 
-    int ComputeColorBound(const vector<int>& candidateList, const vector<unsigned long long>& candidateBits) {
-        if (candidateList.empty()) {
-            return 0;
+    bool operator()(int leftVertex, int rightVertex) const {
+        if (GraphPtr->Profit[leftVertex] != GraphPtr->Profit[rightVertex]) {
+            return GraphPtr->Profit[leftVertex] > GraphPtr->Profit[rightVertex];
         }
+        if (GraphPtr->Cost[leftVertex] != GraphPtr->Cost[rightVertex]) {
+            return GraphPtr->Cost[leftVertex] < GraphPtr->Cost[rightVertex];
+        }
+        return leftVertex < rightVertex;
+    }
+};
 
-        vector<unsigned long long> remainingBits = candidateBits;
-        vector<unsigned long long> classBits(GraphPtr->WordCount, 0ULL);
+class ColorClass {
+public:
+    vector<unsigned long long> MemberBits;
+    int MaxProfit;
+
+    ColorClass() : MaxProfit(0) {
+    }
+
+    explicit ColorClass(int wordCount) : MemberBits(wordCount, 0ULL), MaxProfit(0) {
+    }
+
+    // Clears the class for reuse.
+    void Reset() {
+        fill(MemberBits.begin(), MemberBits.end(), 0ULL);
+        MaxProfit = 0;
+    }
+};
+
+class SearchFrame {
+public:
+    vector<int> Candidates;
+    vector<ColorClass> ColorClasses;
+
+    SearchFrame() {
+    }
+
+    SearchFrame(int vertexCount, int wordCount) {
+        Candidates.reserve(vertexCount);
+        ColorClasses.assign(vertexCount, ColorClass(wordCount));
+    }
+};
+
+class BranchAndBoundSolver {
+public:
+    const Graph* GraphPtr;
+    int Rank;
+    int Size;
+    int BestProfit;
+    vector<int> BestClique;
+    vector<int> CurrentClique;
+    vector<int> VertexOrder;
+    vector<SearchFrame> Frames;
+
+    BranchAndBoundSolver(const Graph* graphPtr, int rankValue, int sizeValue) {
+        GraphPtr = graphPtr;
+        Rank = rankValue;
+        Size = sizeValue;
+        BestProfit = 0;
+
+        VertexOrder.resize(GraphPtr->VertexCount);
+        iota(VertexOrder.begin(), VertexOrder.end(), 0);
+
+        EfficiencyComparator efficiencyComparator(GraphPtr);
+        sort(VertexOrder.begin(), VertexOrder.end(), efficiencyComparator);
+
+        Frames.assign(GraphPtr->VertexCount + 1, SearchFrame(GraphPtr->VertexCount, GraphPtr->WordCount));
+        CurrentClique.reserve(GraphPtr->VertexCount);
+        BestClique.reserve(GraphPtr->VertexCount);
+
+        InitializeGreedySolution();
+    }
+
+    // Updates the incumbent.
+    void UpdateBestSolution(int profitValue) {
+        if (profitValue > BestProfit) {
+            BestProfit = profitValue;
+            BestClique = CurrentClique;
+        }
+    }
+
+    // Computes the structural color bound on the current candidate order.
+    int ComputeColorBound(const vector<int>& candidates, SearchFrame& frame) {
+        int colorCount = 0;
         int boundValue = 0;
 
-        while (!BitSetTools::IsEmpty(remainingBits)) {
-            for (int i = 0; i < GraphPtr->WordCount; i++) {
-                classBits[i] = 0ULL;
+        for (int vertex : candidates) {
+            int classIndex = 0;
+            while (classIndex < colorCount && IntersectsClass(frame.ColorClasses[classIndex], vertex)) {
+                classIndex++;
             }
 
-            int maxProfitInClass = 0;
-
-            for (int i = 0; i < (int)candidateList.size(); i++) {
-                int vertex = candidateList[i];
-                if (!BitSetTools::Contains(remainingBits, vertex)) {
-                    continue;
-                }
-
-                if (!BitSetTools::Intersects(classBits, GraphPtr->AdjacencyBits[vertex])) {
-                    BitSetTools::Add(classBits, vertex);
-                    remainingBits[vertex >> 6] &= ~(1ULL << (vertex & 63));
-                    if (GraphPtr->Profit[vertex] > maxProfitInClass) {
-                        maxProfitInClass = GraphPtr->Profit[vertex];
-                    }
-                }
+            if (classIndex == colorCount) {
+                frame.ColorClasses[colorCount].Reset();
+                colorCount++;
             }
 
-            boundValue += maxProfitInClass;
+            AddVertexToClass(frame.ColorClasses[classIndex], vertex);
+        }
+
+        for (int index = 0; index < colorCount; index++) {
+            boundValue += frame.ColorClasses[index].MaxProfit;
         }
 
         return boundValue;
     }
-};
 
-class KnapsackBound {
-public:
-    Graph* GraphPtr;
-    vector<int>* EfficiencyOrderPtr;
-
-    KnapsackBound(Graph* graphPtr, vector<int>* efficiencyOrderPtr) {
-        GraphPtr = graphPtr;
-        EfficiencyOrderPtr = efficiencyOrderPtr;
-    }
-
-    int ComputeKnapsackBound(const vector<unsigned long long>& candidateBits, int remainingBudget) {
+    // Computes the fractional knapsack bound on the same candidate order.
+    int ComputeKnapsackBound(const vector<int>& candidates, int remainingBudget) const {
         if (remainingBudget <= 0) {
             return 0;
         }
@@ -181,93 +195,48 @@ public:
         double boundValue = 0.0;
         int usedBudget = 0;
 
-        for (int i = 0; i < (int)EfficiencyOrderPtr->size(); i++) {
-            int vertex = (*EfficiencyOrderPtr)[i];
-            if (!BitSetTools::Contains(candidateBits, vertex)) {
-                continue;
-            }
-
+        for (int vertex : candidates) {
             int vertexCost = GraphPtr->Cost[vertex];
             int vertexProfit = GraphPtr->Profit[vertex];
 
             if (usedBudget + vertexCost <= remainingBudget) {
                 usedBudget += vertexCost;
-                boundValue += (double)vertexProfit;
-            } else {
-                int leftBudget = remainingBudget - usedBudget;
-                if (leftBudget > 0) {
-                    boundValue += ((double)leftBudget * (double)vertexProfit) / (double)vertexCost;
-                }
-                break;
+                boundValue += static_cast<double>(vertexProfit);
+                continue;
             }
+
+            int leftBudget = remainingBudget - usedBudget;
+            if (leftBudget > 0) {
+                boundValue += (static_cast<double>(leftBudget) * static_cast<double>(vertexProfit)) / static_cast<double>(vertexCost);
+            }
+            break;
         }
 
-        return (int)boundValue;
-    }
-};
-
-class BranchAndBoundSolver {
-public:
-    Graph* GraphPtr;
-    vector<int> ProfitOrder;
-    vector<int> EfficiencyOrder;
-    ColorBound ColorBoundComputer;
-    KnapsackBound KnapsackBoundComputer;
-    int BestProfit;
-    vector<int> BestClique;
-    int Rank;
-    int Size;
-
-    BranchAndBoundSolver(Graph* graphPtr, int rank, int size)
-        : GraphPtr(graphPtr),
-          ColorBoundComputer(graphPtr, &ProfitOrder),
-          KnapsackBoundComputer(graphPtr, &EfficiencyOrder) {
-        Rank = rank;
-        Size = size;
-        BestProfit = 0;
-        BuildOrders();
+        return static_cast<int>(boundValue);
     }
 
-    void BuildOrders() {
-        ProfitOrder.resize(GraphPtr->VertexCount);
-        EfficiencyOrder.resize(GraphPtr->VertexCount);
-
-        for (int i = 0; i < GraphPtr->VertexCount; i++) {
-            ProfitOrder[i] = i;
-            EfficiencyOrder[i] = i;
+    // Performs depth first branch and bound.
+    void Search(int depth, int currentProfit, int currentCost) {
+        SearchFrame& currentFrame = Frames[depth];
+        if (currentFrame.Candidates.empty()) {
+            return;
         }
 
-        ProfitComparator profitComparator(GraphPtr);
-        EfficiencyComparator efficiencyComparator(GraphPtr);
-
-        sort(ProfitOrder.begin(), ProfitOrder.end(), profitComparator);
-        sort(EfficiencyOrder.begin(), EfficiencyOrder.end(), efficiencyComparator);
-    }
-
-    void UpdateBestSolution(int currentProfit, const vector<int>& currentClique) {
-        if (currentProfit > BestProfit) {
-            BestProfit = currentProfit;
-            BestClique = currentClique;
-        }
-    }
-
-    void Search(const vector<int>& candidateList, const vector<unsigned long long>& candidateBits, int currentProfit, int currentCost, vector<int>& currentClique) {
-        int colorBoundValue = ColorBoundComputer.ComputeColorBound(candidateList, candidateBits);
+        int colorBoundValue = ComputeColorBound(currentFrame.Candidates, currentFrame);
         if (currentProfit + colorBoundValue <= BestProfit) {
             return;
         }
 
         int remainingBudget = GraphPtr->Budget - currentCost;
-        int knapsackBoundValue = KnapsackBoundComputer.ComputeKnapsackBound(candidateBits, remainingBudget);
+        int knapsackBoundValue = ComputeKnapsackBound(currentFrame.Candidates, remainingBudget);
         if (currentProfit + knapsackBoundValue <= BestProfit) {
             return;
         }
 
-        vector<int> nextCandidateList;
-        vector<unsigned long long> nextCandidateBits(GraphPtr->WordCount, 0ULL);
+        SearchFrame& nextFrame = Frames[depth + 1];
 
-        for (int index = (int)candidateList.size() - 1; index >= 0; index--) {
-            int vertex = candidateList[index];
+        for (int index = 0; index < static_cast<int>(currentFrame.Candidates.size()); index++) {
+            int vertex = currentFrame.Candidates[index];
             int newCost = currentCost + GraphPtr->Cost[vertex];
 
             if (newCost > GraphPtr->Budget) {
@@ -275,93 +244,180 @@ public:
             }
 
             int newProfit = currentProfit + GraphPtr->Profit[vertex];
-            currentClique.push_back(vertex);
-            UpdateBestSolution(newProfit, currentClique);
+            CurrentClique.push_back(vertex);
+            UpdateBestSolution(newProfit);
 
-            nextCandidateList.clear();
-            for (int i = 0; i < GraphPtr->WordCount; i++) {
-                nextCandidateBits[i] = 0ULL;
-            }
+            nextFrame.Candidates.clear();
+            int nextBudget = GraphPtr->Budget - newCost;
 
-            for (int prefixIndex = 0; prefixIndex < index; prefixIndex++) {
-                int nextVertex = candidateList[prefixIndex];
-                if (GraphPtr->AreAdjacent(vertex, nextVertex)) {
-                    nextCandidateList.push_back(nextVertex);
-                    BitSetTools::Add(nextCandidateBits, nextVertex);
+            for (int nextIndex = index + 1; nextIndex < static_cast<int>(currentFrame.Candidates.size()); nextIndex++) {
+                int nextVertex = currentFrame.Candidates[nextIndex];
+                if (GraphPtr->Cost[nextVertex] > nextBudget) {
+                    continue;
+                }
+                if (GraphPtr->IsAdjacent(vertex, nextVertex)) {
+                    nextFrame.Candidates.push_back(nextVertex);
                 }
             }
 
-            if (!nextCandidateList.empty()) {
-                Search(nextCandidateList, nextCandidateBits, newProfit, newCost, currentClique);
+            if (!nextFrame.Candidates.empty()) {
+                Search(depth + 1, newProfit, newCost);
             }
 
-            currentClique.pop_back();
+            CurrentClique.pop_back();
         }
     }
 
-    void Solve() {
-        vector<int> currentClique;
-        vector<int> rootCandidateList;
-        vector<unsigned long long> rootCandidateBits(GraphPtr->WordCount, 0ULL);
+    // Builds the root candidate list in the maintained order.
+    void BuildRootCandidates(vector<int>& rootCandidates) const {
+        rootCandidates.clear();
+        rootCandidates.reserve(GraphPtr->VertexCount);
 
-        for (int index = (int)ProfitOrder.size() - 1; index >= 0; index--) {
-            int branchNumber = (int)ProfitOrder.size() - 1 - index;
-            if ((branchNumber % Size) != Rank) {
+        for (int vertex : VertexOrder) {
+            if (GraphPtr->Cost[vertex] <= GraphPtr->Budget) {
+                rootCandidates.push_back(vertex);
+            }
+        }
+    }
+
+    // Runs the sequential search.
+    void SolveSingleRank() {
+        SearchFrame& rootFrame = Frames[0];
+        BuildRootCandidates(rootFrame.Candidates);
+        Search(0, 0, 0);
+    }
+
+    // Splits the first search level across ranks.
+    void SolveMultiRank() {
+        vector<int> rootCandidates;
+        BuildRootCandidates(rootCandidates);
+
+        long long taskId = 0;
+
+        for (int index = 0; index < static_cast<int>(rootCandidates.size()); index++) {
+            if ((taskId % Size) != Rank) {
+                taskId++;
                 continue;
             }
 
-            int vertex = ProfitOrder[index];
-            int vertexCost = GraphPtr->Cost[vertex];
-            if (vertexCost > GraphPtr->Budget) {
-                continue;
-            }
+            int rootVertex = rootCandidates[index];
+            int rootCost = GraphPtr->Cost[rootVertex];
+            int rootProfit = GraphPtr->Profit[rootVertex];
 
-            currentClique.clear();
-            currentClique.push_back(vertex);
-            UpdateBestSolution(GraphPtr->Profit[vertex], currentClique);
+            CurrentClique.clear();
+            CurrentClique.push_back(rootVertex);
+            UpdateBestSolution(rootProfit);
 
-            rootCandidateList.clear();
-            for (int i = 0; i < GraphPtr->WordCount; i++) {
-                rootCandidateBits[i] = 0ULL;
-            }
+            SearchFrame& nextFrame = Frames[1];
+            nextFrame.Candidates.clear();
+            int remainingBudget = GraphPtr->Budget - rootCost;
 
-            for (int prefixIndex = 0; prefixIndex < index; prefixIndex++) {
-                int nextVertex = ProfitOrder[prefixIndex];
-                if (GraphPtr->AreAdjacent(vertex, nextVertex)) {
-                    rootCandidateList.push_back(nextVertex);
-                    BitSetTools::Add(rootCandidateBits, nextVertex);
+            for (int nextIndex = index + 1; nextIndex < static_cast<int>(rootCandidates.size()); nextIndex++) {
+                int nextVertex = rootCandidates[nextIndex];
+                if (GraphPtr->Cost[nextVertex] > remainingBudget) {
+                    continue;
+                }
+                if (GraphPtr->IsAdjacent(rootVertex, nextVertex)) {
+                    nextFrame.Candidates.push_back(nextVertex);
                 }
             }
 
-            if (!rootCandidateList.empty()) {
-                Search(rootCandidateList, rootCandidateBits, GraphPtr->Profit[vertex], vertexCost, currentClique);
+            if (!nextFrame.Candidates.empty()) {
+                Search(1, rootProfit, rootCost);
             }
+
+            taskId++;
+        }
+    }
+
+    // Starts the solver.
+    void Solve() {
+        if (Size == 1) {
+            SolveSingleRank();
+        } else {
+            SolveMultiRank();
+        }
+    }
+
+private:
+    // Seeds a feasible incumbent before the search starts.
+    void InitializeGreedySolution() {
+        vector<int> greedyClique;
+        greedyClique.reserve(GraphPtr->VertexCount);
+
+        int totalProfit = 0;
+        int totalCost = 0;
+
+        for (int vertex : VertexOrder) {
+            int newCost = totalCost + GraphPtr->Cost[vertex];
+            if (newCost > GraphPtr->Budget) {
+                continue;
+            }
+
+            if (!CanJoinClique(greedyClique, vertex)) {
+                continue;
+            }
+
+            greedyClique.push_back(vertex);
+            totalCost = newCost;
+            totalProfit += GraphPtr->Profit[vertex];
+        }
+
+        BestProfit = totalProfit;
+        BestClique = greedyClique;
+    }
+
+    // Checks whether a vertex can join the current clique.
+    bool CanJoinClique(const vector<int>& clique, int vertex) const {
+        for (int member : clique) {
+            if (!GraphPtr->IsAdjacent(member, vertex)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Checks whether a vertex conflicts with a color class.
+    bool IntersectsClass(const ColorClass& colorClass, int vertex) const {
+        const vector<unsigned long long>& adjacencyBits = GraphPtr->AdjacencyBits[vertex];
+        for (int wordIndex = 0; wordIndex < GraphPtr->WordCount; wordIndex++) {
+            if ((colorClass.MemberBits[wordIndex] & adjacencyBits[wordIndex]) != 0ULL) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Inserts a vertex into a color class.
+    void AddVertexToClass(ColorClass& colorClass, int vertex) const {
+        colorClass.MemberBits[vertex >> 6] |= (1ULL << (vertex & 63));
+        if (GraphPtr->Profit[vertex] > colorClass.MaxProfit) {
+            colorClass.MaxProfit = GraphPtr->Profit[vertex];
         }
     }
 };
 
 class ParallelSolver {
 public:
-    Graph* GraphPtr;
-    BranchAndBoundSolver Solver;
+    const Graph* GraphPtr;
     int Rank;
     int Size;
+    BranchAndBoundSolver Solver;
     int GlobalBestProfit;
     vector<int> GlobalBestClique;
 
-    ParallelSolver(Graph* graphPtr, int rank, int size)
-        : GraphPtr(graphPtr), Solver(graphPtr, rank, size) {
-        Rank = rank;
-        Size = size;
+    ParallelSolver(const Graph* graphPtr, int rankValue, int sizeValue)
+        : GraphPtr(graphPtr), Rank(rankValue), Size(sizeValue), Solver(graphPtr, rankValue, sizeValue) {
         GlobalBestProfit = 0;
     }
 
+    // Collects the best solution from all ranks.
     void CollectBestResult() {
-        int localCliqueSize = (int)Solver.BestClique.size();
+        int localCliqueSize = static_cast<int>(Solver.BestClique.size());
         vector<int> localCliqueBuffer(GraphPtr->VertexCount, -1);
 
-        for (int i = 0; i < localCliqueSize; i++) {
-            localCliqueBuffer[i] = Solver.BestClique[i];
+        for (int index = 0; index < localCliqueSize; index++) {
+            localCliqueBuffer[index] = Solver.BestClique[index];
         }
 
         vector<int> gatheredProfits;
@@ -374,36 +430,39 @@ public:
             gatheredCliques.resize(Size * GraphPtr->VertexCount, -1);
         }
 
-        MPI_Gather(&Solver.BestProfit, 1, MPI_INT, Rank == 0 ? &gatheredProfits[0] : NULL, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Gather(&localCliqueSize, 1, MPI_INT, Rank == 0 ? &gatheredSizes[0] : NULL, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Gather(&localCliqueBuffer[0], GraphPtr->VertexCount, MPI_INT, Rank == 0 ? &gatheredCliques[0] : NULL, GraphPtr->VertexCount, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Gather(&Solver.BestProfit, 1, MPI_INT, Rank == 0 ? gatheredProfits.data() : nullptr, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Gather(&localCliqueSize, 1, MPI_INT, Rank == 0 ? gatheredSizes.data() : nullptr, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Gather(localCliqueBuffer.data(), GraphPtr->VertexCount, MPI_INT, Rank == 0 ? gatheredCliques.data() : nullptr, GraphPtr->VertexCount, MPI_INT, 0, MPI_COMM_WORLD);
 
-        if (Rank == 0) {
-            int bestRank = 0;
-            int bestProfit = gatheredProfits[0];
+        if (Rank != 0) {
+            return;
+        }
 
-            for (int i = 1; i < Size; i++) {
-                if (gatheredProfits[i] > bestProfit) {
-                    bestProfit = gatheredProfits[i];
-                    bestRank = i;
-                }
+        int bestRank = 0;
+        int bestProfit = gatheredProfits[0];
+
+        for (int rankIndex = 1; rankIndex < Size; rankIndex++) {
+            if (gatheredProfits[rankIndex] > bestProfit) {
+                bestProfit = gatheredProfits[rankIndex];
+                bestRank = rankIndex;
             }
+        }
 
-            GlobalBestProfit = bestProfit;
-            GlobalBestClique.clear();
+        GlobalBestProfit = bestProfit;
+        GlobalBestClique.clear();
 
-            int cliqueSize = gatheredSizes[bestRank];
-            int baseIndex = bestRank * GraphPtr->VertexCount;
+        int cliqueSize = gatheredSizes[bestRank];
+        int baseIndex = bestRank * GraphPtr->VertexCount;
 
-            for (int i = 0; i < cliqueSize; i++) {
-                int vertex = gatheredCliques[baseIndex + i];
-                if (vertex >= 0) {
-                    GlobalBestClique.push_back(vertex);
-                }
+        for (int index = 0; index < cliqueSize; index++) {
+            int vertex = gatheredCliques[baseIndex + index];
+            if (vertex >= 0) {
+                GlobalBestClique.push_back(vertex);
             }
         }
     }
 
+    // Runs solve and times only the search.
     void Solve() {
         MPI_Barrier(MPI_COMM_WORLD);
         auto startTime = chrono::high_resolution_clock::now();
@@ -420,6 +479,7 @@ public:
         }
     }
 
+    // Writes the answer in the required format.
     void WriteOutput(const string& outputFile) {
         if (Rank != 0) {
             return;
@@ -429,11 +489,11 @@ public:
 
         ofstream outFile(outputFile.c_str());
         outFile << GlobalBestProfit << "\n";
-        for (int i = 0; i < (int)GlobalBestClique.size(); i++) {
-            if (i > 0) {
+        for (int index = 0; index < static_cast<int>(GlobalBestClique.size()); index++) {
+            if (index > 0) {
                 outFile << " ";
             }
-            outFile << GlobalBestClique[i];
+            outFile << GlobalBestClique[index];
         }
         outFile << "\n";
     }
@@ -441,6 +501,7 @@ public:
 
 class InputReader {
 public:
+    // Reads the graph instance.
     Graph* Read(const string& inputFile) {
         ifstream inFile(inputFile.c_str());
 
@@ -449,23 +510,23 @@ public:
         int budget = 0;
         inFile >> vertexCount >> edgeCount >> budget;
 
-        Graph* graph = new Graph(vertexCount, edgeCount, budget);
+        Graph* graphPtr = new Graph(vertexCount, edgeCount, budget);
 
-        for (int i = 0; i < vertexCount; i++) {
-            int profit = 0;
-            int cost = 0;
-            inFile >> profit >> cost;
-            graph->AddVertex(i, profit, cost);
+        for (int vertex = 0; vertex < vertexCount; vertex++) {
+            int profitValue = 0;
+            int costValue = 0;
+            inFile >> profitValue >> costValue;
+            graphPtr->AddVertex(vertex, profitValue, costValue);
         }
 
-        for (int i = 0; i < edgeCount; i++) {
-            int left = 0;
-            int right = 0;
-            inFile >> left >> right;
-            graph->AddEdge(left, right);
+        for (int edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+            int leftVertex = 0;
+            int rightVertex = 0;
+            inFile >> leftVertex >> rightVertex;
+            graphPtr->AddEdge(leftVertex, rightVertex);
         }
 
-        return graph;
+        return graphPtr;
     }
 };
 
@@ -489,13 +550,13 @@ int main(int argc, char* argv[]) {
     string outputFile = argv[2];
 
     InputReader inputReader;
-    Graph* graph = inputReader.Read(inputFile);
+    Graph* graphPtr = inputReader.Read(inputFile);
 
-    ParallelSolver parallelSolver(graph, rank, size);
+    ParallelSolver parallelSolver(graphPtr, rank, size);
     parallelSolver.Solve();
     parallelSolver.WriteOutput(outputFile);
 
-    delete graph;
+    delete graphPtr;
 
     MPI_Finalize();
     return 0;

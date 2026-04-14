@@ -1,0 +1,1345 @@
+Loading Piazza...
+Skip navigation
+
+COL 380/730/7880
+25
+
+COL 333Artificial Intelligence
+Spring 20258
+ <#>
+COL 362/632/7362Introdution to Data Management
+Spring 2026
+ <#>
+COL 380/730/7880Introduction to parallel and distributed programming
+Spring 2026
+ <#>
+COL 7004Mathematical Foundations of Computer Science
+Fall 2025
+ <#>
+COL 772Natural Language Processing
+Spring 202617
+ <#>
+Manage class dropdown
+
+Join Another Class <#>
+
+  * Q & A
+  * Resources <https://piazza.com/iit_delhi/spring2026/col3807307880/
+    resources>
+  * Statistics
+
+Employers
+
+Arib Ashhar Shamoon
+
+Account Settings <https://piazza.com/account_settings>
+
+Theme
+
+Enable Dark Mode <#>
+
+Enable Compact Mode <#>
+
+Support <https://support.piazza.com/>
+
+Report Bug <#>
+
+Piazza Homepage <https://piazza.com/signup>
+
+Join Another Class <https://piazza.com/signup/iit_delhi>
+
+Log Out <#>
+
+  * Q & A
+  * Resources <https://piazza.com/iit_delhi/spring2026/col3807307880/
+    resources>
+  * Statistics
+
+Employers
+
+hw1
+hw21
+hw3
+hw4
+hw5
+hw6
+hw7
+hw8
+hw9
+hw10
+project
+exam1
+logistics3
+other3
+a3
+
+note history
+*Aman Singh Dalawat*
+added a comment to the followup discussion
+| 2 hours ago
+
+note 
+@43
+
+
+    Assignment 3
+
+Updated 1 day ago by Aman Singh Dalawat
+
+Assignment 3 has been released on Moodle. This thread will be used for
+any updates to the problem statement, so please stay active here. If you
+have any queries, post them in this thread only. Deadline is 10th April
+2026 EOD.
+
+1. Setup for HPC    
+Find appropriate openmpi module from `module avail` the load it for
+example `module load amd/compilers/gcc/openmpi/5.0.8`
+
+2. Constraints  
+10 <= N <= 1200  
+0 <= E <= N*(N-1)/2  
+10 <= B <= 1000  
+1<= p(v) , c(v) <= 100
+
+We dont expect you to cover entire space . Sequential test cases are
+designed to finish within 30 minutes using the provided pseudo-code. You
+are responsible for generating your own graphs for local testing and
+performance scaling. Please strictly follow the required Branch and
+Bound heuristics for your MPI implementation.   
+
+3. In case of two or more cliques having same maximum P , you can return
+any of them.
+
+4. Here is the attached test graph for report
+
+5. Deadline updated to 12th April EOD
+
+
+6.
+(summarization of changes already announced in thread)
+- Allowed to use initial sorting of candidates (in any order based on
+weights/profits etc. as you wish)
+    - Avoiding redundant sorts included in Pseudocode is fine 
+- Candidate set popping can be adjusted as per data structure used
+- Other than these Pseudocode must be followed (as per pdf)
+    - In particular , reordering/modifying/adding/removing heuristics is
+NOT allowed 
+    - We'll apply suitable penalty if not followed
+
+Grading policies
+    - We'll decide complexity of test cases based on relative
+performance of your submissions
+    - Parallelisability
+        - Correctness of output is necessary for marks
+        - We'll test on various scale of test cases , both time &
+scaling on number of MPI processes both will be considered
+
+
+input_report.txt <https://piazza.com/redirect/s3?
+bucket=uploads&prefix=paste%2Fkwq38t6awuwvp%2Fb9e50c5fa8602acf87222166e1b6ae800f6e028cab0e45f9d32724c6a06691f9%2Finput_report.txt>
+
+a3
+
+*1*
+
+*264 views
+
+*
+
+------------------------------------------------------------------------
+
+114 Followup Discussions
+
+------------------------------------------------------------------------
+Resolved
+
+@43_f1
+
+*Anonymous Gear*  1 week ago
+How many total assignments are planned?
+
+*8*
+
+*Aman Singh Dalawat*  6 days ago
+Ask the Prof in class
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f2
+
+*Anonymous Mouse*  1 week ago
+what are the bounds on the values of N,E and B
+
+*11*
+
+*Anonymous Poet*  1 week ago
+Kindly confirm this at the earliest so that we can frame our code
+accordingly
+
+*1*
+
+*Anonymous Comp*  1 week ago
+*@Aman Singh Dalawat* this
+
+*0*
+
+*Aman Singh Dalawat*  6 days ago
+Updated
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f3
+
+*Anonymous Scale*  1 week ago
+The assignment says to use a specific test graph for measurement. It
+will provided on piazza. I cant see any.
+
+*2*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f4
+
+*Anonymous Beaker*  1 week ago
+how do we check whether openmpi is present on the hpc or mpich? will
+using one over the other make a difference?
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f5
+
+*Anonymous Calc*  1 week ago
+Our submission need to contain only parallel code or sequential as well?
+
+*0*
+
+*Aman Singh Dalawat*  6 days ago
+Only parallel code
+
+*2*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f6
+
+*Anonymous Atom*  1 week ago
+Please share the test graph as mentioned in assignment pdf
+
+*1*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f7
+
+*Anonymous Comp*  1 week ago
+image.png
+I don't understand this function. What does remaining candidates mean?
+As far as I understood, all the vertices will get coloured in Structural
+Bound part. Can you please explain using small example? Also, do we need
+to consider one vertex from one color class???
+
+*1*
+
+*Aman Singh Dalawat*  6 days ago
+
+1. If you see the pseudo code closely, remaning candidates is the vertex
+set C_cand. Since the algorithm is a recursive one, it represents the
+vertices that you can still add to your current clique.
+2. Not all vertices will get colored, if you see the pseudo code, we are
+trying to color the C_cand set to detect if it is possible to prune this
+search node early. 
+For example:
+C_cand = {0,1,2,3}
+
+Profits:
+p = [10, 8, 6, 5]
+
+At some point, the color class looks like this 
+Color 1: {0,2}
+Color 2: {1}
+
+To color vertex 3, we will check if we can insert it in color 1 (we can
+if it is not adjacent to vertex 0 and 2). Else, we try for another color
+class and so on. Note that this function will compute a greedy coloring
+which can be suboptimal (exact min coloring is NP-Hard)
+
+3. No, see the example above.
+
+*0*
+
+*Anonymous Atom 2*  5 days ago
+Screenshot_2026-04-07_at_2.40.07_PM.pngNaN
+Why are all the vertices not colored. If a vertex is adjacent to atleast
+one member in every class, we are creating a new color class for it, as
+per this text in the assignment pdf.
+
+So every vertex is colored finally.
+
+The pseudo code is asking us to do the knapsack step, by considering all
+the vertices(irrespective of coloring) in C_cand.
+
+can you confirm if this interpretation is correct? If not, please tell
+what is the correct interpretation.
+
+*0*
+
+*Anonymous Atom 2*  4 days ago
+Sir please reply to the above question.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f8
+
+*Anonymous Helix*  7 days ago
+
+Kindly share the sample dataset.
+
+*1*
+
+*Aman Singh Dalawat*  6 days ago
+You are responsible for generating your own graphs for local testing and
+performance scaling
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Unresolved
+
+@43_f9
+
+*Anonymous Gear 2*  7 days ago
+Code will be tested on Haswell node this time too??
+
+*1*
+
+*Anonymous Beaker 2*  6 days ago
+prev assignment will be tested on haswell?
+
+*1*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f10
+
+*Anonymous Mouse 2*  7 days ago
+what will be the  optimal clique if  there are two  cliques having same
+maximum P ?
+
+*1*
+
+*Anonymous Calc 4*  3 days ago
+Could you clarify this please?
+
+*0*
+
+*Anonymous Atom 4*  3 days ago
+
+In case of two or more cliques having same maximum P , you can return
+any of them.
+
+it is already written in the post
+
+*1*
+*Endorsed by Instructor (Aman Singh Dalawat)*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f11
+
+*Anonymous Scale 2*  7 days ago
+What modues do we have to load to run mpi on hpc ?
+
+*2*
+
+*Anonymous Scale 2*  7 days ago
+*modules
+
+*1*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f12
+
+*Anonymous Poet 2*  6 days ago
+Pls answer the queries how are we supposed to start the assignement
+without even the constraints.Pls extend the deadline as well.
+
+*6*
+
+*Anonymous Poet 3*  4 days ago
+Is there any update on deadline extension ?
+
+*1*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f13
+
+*Anonymous Beaker*  6 days ago
+will I/O time be included while measuring performance?
+
+*0*
+
+*Aman Singh Dalawat*  6 days ago
+Yes but it would be negligible as compared to the total runtime.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f14
+
+*Anonymous Gear 2*  6 days ago
+How many nodes will be used for testing
+
+*0*
+
+*Aman Singh Dalawat*  6 days ago
+You should assume we can use multiple nodes for testing.
+
+*0*
+
+*Anonymous Gear 2*  6 days ago
+So in the graph plotting what do we consider someone might run with 2
+nodes other with 1
+
+*0*
+
+*Aman Singh Dalawat*  6 days ago
+For the report, you should only plot graph with one node (make sure to
+request atleast 16 cores)
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f15
+
+*Anonymous Calc 2*  6 days ago
+
+Which of the following Code Changes are we allowed to make while using
+exact Branch Bound Algorithm and the two specific Bounding Heuristics ? 
+
+1) Pre-Processing - Are we allow to perform pre-processing on the graph ?
+2) Additional Heuristics - Are we allowed to implement additional
+heuristics apart from the given two.
+3) Change Control Flow - Additional return statements depending upong
+(2) and (1) / Changing order of calculation of heuristics etc ?
+
+
+*0*
+
+*Aman Singh Dalawat*  5 days ago
+No to all the questions.
+The implementation must strictly follow the pseudo code provided in the
+assignment. You are free to choose appropriate data structures and
+representations, but the core algorithmic logic must remain unchanged.
+This requirement is because we want that your effort is focused on
+designing an effective parallelization strategy, rather than modifying
+heuristics or optimizing the sequential algorithm.
+
+*0*
+
+*Anonymous Mouse 3*  4 days ago
+*@Aman Singh Dalawat* would you count any kind of sorting on the
+candidates before running FindClique as an instance of preprocessing the
+graph?
+
+*2*
+
+*Anonymous Mouse*  3 days ago
+yes sir please clarify this as early as possible
+
+*3*
+
+*Aman Singh Dalawat*  3 days ago
+No sorting on the candidates is fine you can do that.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f16
+
+*Anonymous Comp 2*  5 days ago
+Could anyone confirm how long is their sequential version of code taking
+to generate output for the report test case?
+
+*0*
+
+*Anonymous Gear 3*  5 days ago
+My code takes 71s when compiled with O3 optimization
+
+*0*
+
+*Anonymous Mouse 3*  5 days ago
+please could you also share what output you were getting
+
+*0*
+
+*Anonymous Beaker 3*  5 days ago
+
+approx 5 min for me O2 
+my output to TAs test case was 
+
+650
+4 44 46 134 142 152 244 299 321 344 347 353
+
+is it same for you guys?
+
+*7*
+
+*Anonymous Mouse 3*  5 days ago
+yes, getting same output as mentioned above
+
+*1*
+
+*Anonymous Beaker 3*  5 days ago
+thankyou for confirming
+
+*1*
+
+*Anonymous Calc 3*  4 days ago
+How many cores you have used , i mean value of -np ?
+
+*2*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f17
+
+*Anonymous Helix 2*  5 days ago
+Following the clarification that implementations must strictly follow
+the pseudocode and only the two specified bounding heuristics, we have a
+specific question about evaluation:
+Will you be manually reviewing each student's code to check if they have
+followed the pseudocode exactly, or will compliance be inferred from
+output correctness alone?
+The reason we ask is there are certain implementation choices that
+produce identical outputs and process vertices in exactly the same order
+as the pseudocode, but differ in internal details. For example:
+Avoiding a redundant sort inside a bound function because the data
+structure already maintains the required order as an invariant
+Using a different but equivalent data structure representation that
+produces the same result
+These do not change the algorithm, control flow, or output in any way
+but they differ from the pseudocode at the code level.
+Will such cases be penalised, or is compliance judged purely on whether
+the output is correct and the two bounds are being applied as specified?
+
+*4*
+
+*Aman Singh Dalawat*  3 days ago
+
+ 1. That is our headache you don't have to worry about it.
+ 2. Avoiding redundant sorts is okay if your as that is a property of
+    your choice of dataset. 
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f18
+
+*Laksh Goel*  5 days ago
+Sequential is to be run with O3 optimization or without O3 optimization?
+That creates a difference in execution time.
+
+*2*
+
+*Aman Singh Dalawat*  3 days ago
+Use O3 flag as mentioned in assignment pdf.
+
+*1*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f19
+
+*Anonymous Scale 3*  5 days ago
+
+can you share the range of number of nodes and cpus per node that will
+be used for performance evaluation
+
+*2*
+
+*Aman Singh Dalawat*  3 days ago
+No, but you should design your code keeing in mind we will run it on
+multiple nodes.
+
+*1*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f20
+
+*Anonymous Comp*  5 days ago
+
+In the output format
+13
+
+2 3
+
+Is there a space or newline after 3? 
+
+cout<<p_max<<endl;
+    for(int i=0;i<c.size();++i)
+        cout<<c[i]<<" ";
+    cout<<endl;
+
+Im printing like this in my code
+
+*1*
+
+*Aman Singh Dalawat*  3 days ago
+newline
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f21
+
+*Anonymous Beaker*  5 days ago
+has anybody been able to test the mpi code on hpc?
+i am getting the following errors while trying to load the openmpi module:
+
+mpic++: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libpmix.so.2)
+mpic++: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libpmix.so.2)
+mpic++: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libevent_core-2.1.so.7)
+mpic++: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libevent_core-2.1.so.7)
+mpic++: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libevent_pthreads-2.1.so.7)
+mpic++: /lib64/libc.so.6: version `GLIBC_2.32' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libhwloc.so.15)
+mpic++: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libhwloc.so.15)
+mpic++: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libhwloc.so.15)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by
+mpirun)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by
+mpirun)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libpmix.so.2)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libpmix.so.2)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libevent_core-2.1.so.7)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libevent_core-2.1.so.7)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libevent_pthreads-2.1.so.7)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.32' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libhwloc.so.15)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libhwloc.so.15)
+mpirun: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by /
+home/apps/rhel9/amd/gcc/openmpi/5.0.8/lib/libhwloc.so.15)
+
+*0*
+
+*Anonymous Gear 3*  4 days ago
+module load compiler/gcc/9.1.0
+module load compiler/gcc/9.1/openmpi/4.1.2
+
+These two modules worked for me
+
+*3*
+
+*Aman Singh Dalawat*  3 days ago
+See point number 1 in the post to understand how to setup on HPC
+
+*0*
+
+*Anonymous Scale 3*  3 days ago
+module load compiler/gcc/9.1.0
+module load mpi/mpich/3.1.4/gcc/mpivars
+
+sir my code is compiling with the above loads ,but  showing errors with 
+module load compiler/gcc/9.1/openmpi/4.1.2
+and
+module load amd/compilers/gcc/openmpi/5.0.8
+what should I do
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f22
+
+*Anonymous Atom 2*  4 days ago
+Screenshot_2026-04-08_at_4.44.40_PM.pngNaN
+here in the branching step, it is written to pop  the last element.
+Can i have a different data structure in my Cand. that effectivley
+allows me to order my Cand Set in a way i want.?
+
+*0*
+
+*Anonymous Atom 2*  4 days ago
+So that i can better give out tasks, when i give parallelise my
+sequential code.
+
+Or is it like i should always iterate from the largest index to the
+smallest one in the Cand set
+
+*1*
+
+*Aman Singh Dalawat*  3 days ago
+You are free to use any dataset to represent the variables used in the
+pseudo code and pop candidates in any order you want.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f23
+
+*Anonymous Atom 3*  4 days ago
+Finally for evaluation how many processes (rank) will be spawned sir. is
+it 16 for all the testcases? As some implementation performs better for
+lower rank but not so well for higher ranks
+
+*2*
+
+*Aman Singh Dalawat*  1 day ago
+It will also depend on the test cases, we will decide that during
+evaluation based on everyone's submissions.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f24
+
+*Anonymous Comp*  4 days ago
+image.pngso we cannot add new bounds in the Branching part to make
+algorithm faster?
+
+*0*
+
+*Aman Singh Dalawat*  3 days ago
+No you cannot add more bounds and heuristics neither can you change the
+current bounds.
+
+*1*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f25
+
+*Anonymous Comp 3*  3 days ago
+
+Sir are we allowed to change the way search space is covered that is
+branching part keeping all the heuristics same and the core logic same?
+
+*1*
+
+*Aman Singh Dalawat*  3 days ago
+Can you elaborate your idea, in a private post?
+
+*0*
+
+*Anonymous Comp 3*  3 days ago
+
+https://piazza.com/class/mk2exak3kau4fk/post/46
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f26
+
+*Anonymous Helix 3*  3 days ago
+What should be the structure of the directory, sir/ma'am? Should it be
+like the last time a3_<entry_no>.zip/a3_<entry_no>/(code files) or just
+a3_<entry_no>.zip/(code files)?
+
+*1*
+
+*Aman Singh Dalawat*  3 days ago
+should be the second one, zip the files not the folder.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f27
+
+*Anonymous Gear 4*  3 days ago
+
+Hello sir, please confirm the following:
+
+  * Is using a data structure that already maintains sorted candidates
+    allowed, or is it necessary to sort again and again inside the
+    bounds check heuristics?
+  * My code is using a method that complies with GCC and works on HPC,
+    but is giving issue on MAC (Clang) with the compile command
+    specified in assignment doc. If it works on HPC, then is it ok?
+  * For the candidate set loop (the while C_cand is not empty; v <- pop
+    last element from C_cand), is it necessary to pop from backward or
+    can I explore candidate set in any order, like from starting etc?
+
+Thanks.
+
+*1*
+
+*Aman Singh Dalawat*  3 days ago
+
+ 1. Yes you can use a such data structure and avoid sorting if that helps.
+ 2. It will be tested on HPC its ok
+ 3. It is not necessary you can change the order.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f28
+
+*Anonymous Mouse 4*  3 days ago
+Are we allowed to include bits/stdc++.h library?
+
+*0*
+
+*Aman Singh Dalawat*  3 days ago
+Yes
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f29
+
+*Anonymous Scale 4*  3 days ago
+how should we zip the submission?
+
+*0*
+
+*Aman Singh Dalawat*  3 days ago
+explain in assignment pdf as well as in this thread.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f30
+
+*Anonymous Beaker 4*  3 days ago
+Will our code be tested with np = 1?
+
+*1*
+
+*Aman Singh Dalawat*  3 days ago
+Yes
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f31
+
+*Anonymous Atom 2*  3 days ago
+Sir can i sort the profit vector in my main function?
+
+*0*
+
+*Aman Singh Dalawat*  2 days ago
+Yes
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f32
+
+*Anonymous Poet 4*  3 days ago
+Could you please tell if possible, is the weightage more for
+performance(time taken) or how well it scales (ratio)?
+Thanks
+
+*3*
+
+*Aman Singh Dalawat*  2 days ago
+It will be a combination of both.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f33
+
+*Anonymous Comp 4*  2 days ago
+
+Sir, we will be graded on the times taken by our program for different
+number of processes or will we be graded on the basis of the speedup
+between our np 1 and np 16 version of the code for the performance part
+of the assignment? 
+
+*3*
+
+*Aman Singh Dalawat*  1 day ago
+Answered in main post.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f34
+
+*Anonymous Helix 4*  2 days ago
+Sir, is precomputing few things, in any way, allowed?
+
+*2*
+
+*Anonymous Helix 4*  2 days ago
+what i mean by precomputing is that can i use bitmasks to transform my
+graph, and can i do presorting on profit-cost ratio?
+please clarify this asap because if it isnt allowed then i have to
+restructure my code completely
+
+*0*
+
+*Aman Singh Dalawat*  2 days ago
+Yes you can do presorting and use bitmasks as they do not change the
+core logic
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f35
+
+*Anonymous Gear*  2 days ago
+Please resolve my query : https://piazza.com/class/mk2exak3kau4fk/
+post/53 <https://piazza.com/class/mk2exak3kau4fk/post/53>
+
+*2*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f36
+
+*Anonymous Gear 5*  2 days ago
+Can we have different cliques but the same expected profit ( true
+optima) in the output.txt?
+
+*0*
+
+*Aman Singh Dalawat*  2 days ago
+Yes I have already clarified that in the post
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f37
+
+*Anonymous Comp 2*  2 days ago
+How will you compare performance for evaluation? will it be like my code
+np 1 vs my code np 16 , or overall time across all students will be
+considered? Also would the speedup be calculated against your sequential
+version or against our own sequential version only?
+
+*1*
+
+*Aman Singh Dalawat*  1 day ago
+Answered you first question in the main post, and for the second, we
+would compare against your own sequential version (np = 1).
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f38
+
+*Anonymous Mouse 5*  2 days ago
+Hello Sir/ma'am,
+
+I wanted to request you to kindly consolidate and clearly mention all
+the assumptions for the main assignment on Piazza. There is quite a bit
+of confusion (at least on my end), especially regarding what is allowed
+vs not allowed.
+
+Specifically, it would really help if you could confirm the following
+points in one place:
+
+- Whether any form of preprocessing on the graph is strictly disallowed
+in all cases.
+- Clarification on “strict pseudocode adherence” — are any minor
+implementation-level adjustments permitted, or must it be followed line-
+by-line without deviation?
+- Confirmation that no additional heuristics or early-return logic can
+be introduced beyond the two given bounds.
+- The exact interpretation of the sorting allowance — we understand
+sorting the initial candidate vertices (profit vector) is allowed before
+passing to the solver, but nothing beyond that.
+- Reconfirmation that the order of bounds must strictly be: Structural
+Color Bound → Resource Knapsack Bound.
+- Clarification regarding the “Sorting loophole” discussion under
+Assignment 3 issues — what are the final takeaways we should follow for
+evaluation and hidden tests?
+- Any other thing you want to clarify additionally!
+
+Since there are multiple threads discussing parts of these, it would be
+really helpful if all key takeaways and final rules could be summarized
+once officially, so everyone is aligned.
+
+Also, given the limited time (even with the extended deadline), a final
+consolidated clarification would help avoid incorrect assumptions.
+
+Thank you!
+
+*3*
+
+*Anonymous Mouse 4*  2 days ago
+-also should always the last element be removed from candidate vector
+
+*1*
+
+*Aman Singh Dalawat*  1 day ago
+replied in the the main post
+
+*1*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f39
+
+*Anonymous Comp*  2 days ago
+How much time input_report.txt takes for sequential code? My is running
+for a while now. I am using excat same algorithm as in the assignment
+file and running with -O3 flag.
+
+*0*
+
+*Anonymous Comp*  2 days ago
+problem solved
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f40
+
+*Anonymous Scale 5*  2 days ago
+
+Sir please respond to this Piazza post:
+
+https://piazza.com/class/mk2exak3kau4fk/post/54
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f41
+
+*Anonymous Mouse 5*  1 day ago
+Please Respond
+https://piazza.com/class/mk2exak3kau4fk/post/43_f38 <https://piazza.com/
+class/mk2exak3kau4fk/post/43_f38>
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f42
+
+*Anonymous Beaker 2*  1 day ago
+I asked for the ordering of color and knapsack bound in private post to
+which you agreed, so should I remove that and stick to given ordering?
+
+*0*
+
+*Aman Singh Dalawat*  1 day ago
+Stick to the latest update.
+
+*1*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f43
+
+*Anonymous Atom 4*  1 day ago
+
+can we get a bigger tc for report as the tc given is small and
+efficiency values turn out to be very low in my case i am getting output
+in 6-7s for running it sequentially (or np=1) even by sticking to all
+the rules, which becomes 0.7s for np=16 leading to less efficiency
+values (around 55-60)
+
+*2*
+
+*Aman Singh Dalawat*  10 hours ago
+Not all people will get such fast times, it is okay if you get low
+times. You can optionally include another graph for your own generated
+test case in report for showing speedup.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f44
+
+*Anonymous Beaker 2*  1 day ago
+it is okay to use any library as far as it compiles using the modules
+given right?
+
+*0*
+
+*Aman Singh Dalawat*  10 hours ago
+Yes
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f45
+
+*Anonymous Atom 2*  24 hours ago
+Sir, please give a new baseline test case, this test case is so small
+that i am unable to show any sufficient efficiency.
+My np=1 itself solves it under 4sec.
+Increasing np, it is increasing the overhead and hence i am unable to
+show any significant speedup
+
+*0*
+
+*Aman Singh Dalawat*  10 hours ago
+Not all people will get such fast times, it is okay if you get low
+times. You can optionally include another graph for your own generated
+test case in report for showing speedup.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f46
+
+*Anonymous Beaker 5*  23 hours ago
+Sir, could you please clarify: will the performance score primarily
+reflect (a) absolute execution time , (b) the speedup ratio from np=1 to
+np=16, or (c) a weighted combination of both?(if yes, how is it
+distributed ?) This would help us understand whether to optimize for raw
+speed or parallelizability.
+
+*1*
+
+*Aman Singh Dalawat*  10 hours ago
+We'll test on various scale of test cases , both time & scaling on
+number of MPI processes both will be considered.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f47
+
+*Anonymous Poet 5*  12 hours ago
+I have some doubts in the approach and hence put up a private post.
+Please look into it.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f48
+
+*Anonymous Poet 4*  9 hours ago
+I'm unsure about if my approach is allowed or not and hence put up a
+private post. Please look into it.
+https://piazza.com/class/mk2exak3kau4fk/post/59 <https://piazza.com/
+class/mk2exak3kau4fk/post/59>
+Thanks
+
+*0*
+
+*Anonymous Poet 4*  6 hours ago
+sir please clarify this
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f49
+
+*Anonymous Comp 4*  5 hours ago
+
+Are we allowed to exit early from the heuristics, in other words, while
+computing the value of the heuristic, say we already have val > pmax -
+pcurr at some point, now adding the rest of the entires is pointless as
+we are not going to return on the basis of this heuristic, so we can
+stop its computation at this stage only and the code will behave exactly
+the same with or without this optimization, the value of heuristic will
+not be the eaxact value in the pcurr+ val < pmax check, but since val >
+pmax - pcurr, the value should not matter. Are we allowed to do this?
+
+*0*
+
+*Aman Singh Dalawat*  2 hours ago
+Not allowed
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+Resolved
+
+@43_f50
+
+*Anonymous Mouse 2*  5 hours ago
+should the zip file contain a top-level directory (e.g., a3_|xyz||/|) or
+should files be at the root of the zip?”
+
+*0*
+
+*Aman Singh Dalawat*  2 hours ago
+files at the root I have already clarified this.
+
+*0*
+
+Reply
+------------------------------------------------------------------------
+
+Sir, according to the pseudocode there was no constraint on the order of popping the candidates. Also sorting of candidates was allowed as well. 
+
+But this has caused a big loophole perhaps because for an input which requires 30 minutes for the code to run (in case are initial candidates are sorted by profit or used as it it), the same code runs in just 1 second for the same large input (if we sort the initial candidates according to the ratio of profit/cost)
+
+The issue with this is that the parallelisability of the code is no longer measurable as that 1 second is because of the sequential part of the code.. and thus the code runs in the same time i.e. 1 second for np=1,2,4,8,16
+
+So, some people might ask for the rubrics. Whether marks are for performance or parallelisability?
+
+But both the rubrics have some inherent issues:
+
+1) Performance: Everyone can just use this new sorting of candidates and get their time down to 1 second. But it defeats the purpose of the assignment.
+
+2) Parallelisability: if the ratio is measured between the time taken for different values of np, a malicious adversary can make their sequential code intentionally slower (by adding a sleep or anything) and not have such things for higher ranks. (This will give inflated values of speedup)
+
+There are 2 possible solutions which I can currently think of:
+
+1) We disallow the usage of sorting of initial candidates. But again in this case, a malicious adversary can sort the code regardless and put sleep according to ranks and have "believable values" by which they can get great marks while not following the guidelines.
+
+2) The inherent issue is that the test cases are randomly generated. So sorting by profit/cost ratio is a really good heuristic in such cases. But if the test cases are specially designed i.e. different graph structures and cost, profit values.. Then the sorting heuristic might fail. (A small issue with this solution is that someone might try to come up with a better sorting idea and get speedup on the new test cases but this would be difficult to do. But if someone is able to do so, then the assignment would be partially on parallelisability and partially on finding a better sorting heuristic)
+
+3) Any other better solution which anyone else can think of?
+
+Q) In case we go by solution 2, would we be provided by a sample testcase for the report again? 
+
+(Another, small concern was that can we change the ordering of the bounds (color bound and knapsack bound) as they are independent to each other. Many people think it is allowed and it does provide a slight speedup which is NOT as absurd as the speedup as we got in the initial sorting of the candidates. To be honest, this can be ignored but I wrote it here to remove discrepancies and so that everyone can have a fair ground)
+
+
+Sir, can u tell what is the maximum size of test case u will give even after u increase the test case size?
+I use a data structure that needs compile time size values, hence i want to know what is the maximum you will increase this to.
+
+
+Bounds are already announced in the main post
+
+
+
+
