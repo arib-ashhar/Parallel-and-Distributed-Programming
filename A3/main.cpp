@@ -16,6 +16,7 @@ public:
     int WordCount;
     vector<int> Profit;
     vector<int> Cost;
+    vector<int> Degree;
     vector<unsigned long long> AdjacencyBits;
 
     Graph(int vertexCount, int edgeCount, int budget) {
@@ -25,6 +26,7 @@ public:
         WordCount = (VertexCount + 63) >> 6;
         Profit.assign(VertexCount, 0);
         Cost.assign(VertexCount, 0);
+        Degree.assign(VertexCount, 0);
         AdjacencyBits.assign(VertexCount * WordCount, 0ULL);
     }
 
@@ -38,6 +40,8 @@ public:
     void AddEdge(int leftVertex, int rightVertex) {
         AdjacencyBits[leftVertex * WordCount + (rightVertex >> 6)] |= (1ULL << (rightVertex & 63));
         AdjacencyBits[rightVertex * WordCount + (leftVertex >> 6)] |= (1ULL << (leftVertex & 63));
+        Degree[leftVertex]++;
+        Degree[rightVertex]++;
     }
 
     // Checks graph adjacency.
@@ -95,6 +99,28 @@ public:
     }
 };
 
+class DegreeComparator {
+public:
+    const Graph* GraphPtr;
+
+    explicit DegreeComparator(const Graph* graphPtr) {
+        GraphPtr = graphPtr;
+    }
+
+    bool operator()(int leftVertex, int rightVertex) const {
+        if (GraphPtr->Degree[leftVertex] != GraphPtr->Degree[rightVertex]) {
+            return GraphPtr->Degree[leftVertex] > GraphPtr->Degree[rightVertex];
+        }
+        if (GraphPtr->Profit[leftVertex] != GraphPtr->Profit[rightVertex]) {
+            return GraphPtr->Profit[leftVertex] > GraphPtr->Profit[rightVertex];
+        }
+        if (GraphPtr->Cost[leftVertex] != GraphPtr->Cost[rightVertex]) {
+            return GraphPtr->Cost[leftVertex] < GraphPtr->Cost[rightVertex];
+        }
+        return leftVertex < rightVertex;
+    }
+};
+
 class SearchFrame {
 public:
     vector<int> Candidates;
@@ -135,6 +161,7 @@ public:
     vector<int> CurrentClique;
     vector<int> VertexOrder;
     vector<int> ProfitOrder;
+    vector<int> DegreeOrder;
     vector<SearchFrame> Frames;
 
     BranchAndBoundSolver(const Graph* graphPtr, int rankValue, int sizeValue) {
@@ -145,13 +172,17 @@ public:
 
         VertexOrder.resize(GraphPtr->VertexCount);
         ProfitOrder.resize(GraphPtr->VertexCount);
+        DegreeOrder.resize(GraphPtr->VertexCount);
         iota(VertexOrder.begin(), VertexOrder.end(), 0);
         iota(ProfitOrder.begin(), ProfitOrder.end(), 0);
+        iota(DegreeOrder.begin(), DegreeOrder.end(), 0);
 
         EfficiencyComparator efficiencyComparator(GraphPtr);
         ProfitComparator profitComparator(GraphPtr);
+        DegreeComparator degreeComparator(GraphPtr);
         sort(VertexOrder.begin(), VertexOrder.end(), efficiencyComparator);
         sort(ProfitOrder.begin(), ProfitOrder.end(), profitComparator);
+        sort(DegreeOrder.begin(), DegreeOrder.end(), degreeComparator);
 
         Frames.assign(GraphPtr->VertexCount + 1, SearchFrame(GraphPtr->VertexCount, GraphPtr->WordCount));
         CurrentClique.reserve(GraphPtr->VertexCount);
@@ -408,6 +439,18 @@ private:
     void InitializeGreedySolution() {
         TryGreedyOrder(VertexOrder);
         TryGreedyOrder(ProfitOrder);
+        TryGreedyOrder(DegreeOrder);
+
+        int seedCount = min(GraphPtr->VertexCount, 24);
+        for (int index = 0; index < seedCount; index++) {
+            TrySeededGreedy(VertexOrder[index], VertexOrder);
+            TrySeededGreedy(ProfitOrder[index], ProfitOrder);
+            TrySeededGreedy(DegreeOrder[index], DegreeOrder);
+        }
+
+        int pairSeedCount = min(GraphPtr->VertexCount, 80);
+        TryPairSeededGreedy(ProfitOrder, pairSeedCount);
+        TryPairSeededGreedy(VertexOrder, pairSeedCount);
     }
 
     // Builds a greedy clique using a fixed vertex order.
@@ -436,6 +479,98 @@ private:
         if (totalProfit > BestProfit) {
             BestProfit = totalProfit;
             BestClique = greedyClique;
+        }
+    }
+
+    // Builds a greedy clique forced to include the seed vertex.
+    void TrySeededGreedy(int seedVertex, const vector<int>& order) {
+        if (GraphPtr->Cost[seedVertex] > GraphPtr->Budget) {
+            return;
+        }
+
+        vector<int> greedyClique;
+        greedyClique.reserve(GraphPtr->VertexCount);
+        greedyClique.push_back(seedVertex);
+
+        int totalProfit = GraphPtr->Profit[seedVertex];
+        int totalCost = GraphPtr->Cost[seedVertex];
+
+        for (int vertex : order) {
+            if (vertex == seedVertex) {
+                continue;
+            }
+
+            int newCost = totalCost + GraphPtr->Cost[vertex];
+            if (newCost > GraphPtr->Budget) {
+                continue;
+            }
+
+            if (!CanJoinClique(greedyClique, vertex)) {
+                continue;
+            }
+
+            greedyClique.push_back(vertex);
+            totalCost = newCost;
+            totalProfit += GraphPtr->Profit[vertex];
+        }
+
+        if (totalProfit > BestProfit) {
+            BestProfit = totalProfit;
+            BestClique = greedyClique;
+        }
+    }
+
+    // Builds greedy cliques seeded with adjacent vertex pairs.
+    void TryPairSeededGreedy(const vector<int>& order, int seedCount) {
+        for (int leftIndex = 0; leftIndex < seedCount; leftIndex++) {
+            int leftVertex = order[leftIndex];
+            int leftCost = GraphPtr->Cost[leftVertex];
+            if (leftCost > GraphPtr->Budget) {
+                continue;
+            }
+
+            for (int rightIndex = leftIndex + 1; rightIndex < seedCount; rightIndex++) {
+                int rightVertex = order[rightIndex];
+                int pairCost = leftCost + GraphPtr->Cost[rightVertex];
+                if (pairCost > GraphPtr->Budget) {
+                    continue;
+                }
+                if (!GraphPtr->IsAdjacent(leftVertex, rightVertex)) {
+                    continue;
+                }
+
+                vector<int> greedyClique;
+                greedyClique.reserve(GraphPtr->VertexCount);
+                greedyClique.push_back(leftVertex);
+                greedyClique.push_back(rightVertex);
+
+                int totalProfit = GraphPtr->Profit[leftVertex] + GraphPtr->Profit[rightVertex];
+                int totalCost = pairCost;
+
+                for (int vertex : order) {
+                    if (vertex == leftVertex || vertex == rightVertex) {
+                        continue;
+                    }
+
+                    int newCost = totalCost + GraphPtr->Cost[vertex];
+                    if (newCost > GraphPtr->Budget) {
+                        continue;
+                    }
+
+                    if (!CanJoinClique(greedyClique, vertex)) {
+                        continue;
+                    }
+
+                    greedyClique.push_back(vertex);
+                    totalCost = newCost;
+                    totalProfit += GraphPtr->Profit[vertex];
+                }
+
+                if (totalProfit > BestProfit) {
+                    BestProfit = totalProfit;
+                    BestClique = greedyClique;
+                }
+            }
         }
     }
 
