@@ -1,0 +1,3 @@
+Base execution time: 3777 ms
+Best wall-clock time: 0.95 s
+Best speedup: 13.586

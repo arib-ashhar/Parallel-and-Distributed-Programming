@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+<rect width="100%" height="100%" fill="#fffdf8"/>
+<text x="450.00" y="34" text-anchor="middle" font-size="26" font-family="Helvetica, Arial, sans-serif" fill="#1f2937">Execution Time vs MPI Processes</text>
+<line x1="95" y1="475.00" x2="860" y2="475.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="83" y="480.00" text-anchor="end" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">0</text>
+<line x1="95" y1="394.00" x2="860" y2="394.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="83" y="399.00" text-anchor="end" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">1000</text>
+<line x1="95" y1="313.00" x2="860" y2="313.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="83" y="318.00" text-anchor="end" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">2000</text>
+<line x1="95" y1="232.00" x2="860" y2="232.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="83" y="237.00" text-anchor="end" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">3000</text>
+<line x1="95" y1="151.00" x2="860" y2="151.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="83" y="156.00" text-anchor="end" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">4000</text>
+<line x1="95" y1="70.00" x2="860" y2="70.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="83" y="75.00" text-anchor="end" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">5000</text>
+<line x1="95.00" y1="70" x2="95.00" y2="475" stroke="#f1f5f9" stroke-width="1"/>
+<text x="95.00" y="503" text-anchor="middle" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">1</text>
+<line x1="146.00" y1="70" x2="146.00" y2="475" stroke="#f1f5f9" stroke-width="1"/>
+<text x="146.00" y="503" text-anchor="middle" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">2</text>
+<line x1="248.00" y1="70" x2="248.00" y2="475" stroke="#f1f5f9" stroke-width="1"/>
+<text x="248.00" y="503" text-anchor="middle" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">4</text>
+<line x1="452.00" y1="70" x2="452.00" y2="475" stroke="#f1f5f9" stroke-width="1"/>
+<text x="452.00" y="503" text-anchor="middle" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">8</text>
+<line x1="860.00" y1="70" x2="860.00" y2="475" stroke="#f1f5f9" stroke-width="1"/>
+<text x="860.00" y="503" text-anchor="middle" font-size="14" font-family="Helvetica, Arial, sans-serif" fill="#4b5563">16</text>
+<line x1="95" y1="475" x2="860" y2="475" stroke="#111827" stroke-width="2"/>
+<line x1="95" y1="70" x2="95" y2="475" stroke="#111827" stroke-width="2"/>
+<polyline fill="none" stroke="#0f766e" stroke-width="4" points="95.00,169.06 146.00,307.33 248.00,390.84 452.00,430.94 860.00,452.48"/>
+<circle cx="95.00" cy="169.06" r="6" fill="#0f766e"/>
+<text x="95.00" y="155.06" text-anchor="middle" font-size="13" font-family="Helvetica, Arial, sans-serif" fill="#111827">3.78e+03</text>
+<circle cx="146.00" cy="307.33" r="6" fill="#0f766e"/>
+<text x="146.00" y="293.33" text-anchor="middle" font-size="13" font-family="Helvetica, Arial, sans-serif" fill="#111827">2.07e+03</text>
+<circle cx="248.00" cy="390.84" r="6" fill="#0f766e"/>
+<text x="248.00" y="376.84" text-anchor="middle" font-size="13" font-family="Helvetica, Arial, sans-serif" fill="#111827">1.04e+03</text>
+<circle cx="452.00" cy="430.94" r="6" fill="#0f766e"/>
+<text x="452.00" y="416.94" text-anchor="middle" font-size="13" font-family="Helvetica, Arial, sans-serif" fill="#111827">544</text>
+<circle cx="860.00" cy="452.48" r="6" fill="#0f766e"/>
+<text x="860.00" y="438.48" text-anchor="middle" font-size="13" font-family="Helvetica, Arial, sans-serif" fill="#111827">278</text>
+<text x="450.00" y="540" text-anchor="middle" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#1f2937">Number of MPI Processes</text>
+<text x="28" y="280.00" text-anchor="middle" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#1f2937" transform="rotate(-90 28 280.00)">Execution Time (ms)</text>
+</svg>

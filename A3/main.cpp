@@ -428,7 +428,11 @@ public:
 
     // Starts the solver.
     void Solve() {
-        SolveMultiRank();
+        if (Size == 1) {
+            SolveSingleRank();
+        } else {
+            SolveMultiRank();
+        }
     }
 
 private:
